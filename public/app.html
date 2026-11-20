@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SecondLife — My account</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="wrap wide">
+    <header class="top">
+      <a class="logo" href="/"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V11"/><path d="M12 11c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 14c0-3-2.5-5-6-5 0 3 2.5 5 6 5z"/></svg></span>SecondLife</a>
+      <div class="top-right"><a class="btn btn-ghost" href="/">Browse</a> <span class="muted hide-sm" id="who"></span> <button class="btn btn-ghost hidden" id="logout">Log out</button></div>
+    </header>
+
+    <section class="card login hidden" id="login-view">
+      <h2>Log in or create an account</h2>
+      <p class="muted" id="login-hint">We'll email you a sign-in link. No password needed.</p>
+      <form id="login-form" class="stack">
+        <input type="email" name="email" required placeholder="you@email.com" aria-label="Email address" autocomplete="email">
+        <button class="btn btn-primary" type="submit">Continue</button>
+      </form>
+      <button class="btn btn-ghost hidden full" id="google-btn">Continue with Google</button>
+      <div id="login-msg"></div>
+    </section>
+
+    <section class="hidden" id="app-view">
+      <nav class="tabs" role="tablist">
+        <button class="tab" data-tab="listings" role="tab">My listings</button>
+        <button class="tab" data-tab="offers" role="tab">Offers</button>
+        <button class="tab" data-tab="deals" role="tab">Deals</button>
+        <button class="tab" data-tab="profile" role="tab">Profile</button>
+        <a class="tab hidden" id="admin-link" href="/admin">Admin</a>
+      </nav>
+      <div id="terms-banner" class="msg bad hidden">Accept the terms in your <a href="#profile">Profile</a> before you sell or buy.</div>
+      <div id="flash"></div>
+
+      <div data-panel="listings">
+        <div class="card-head"><h2>My listings</h2><button class="btn btn-primary" id="new-listing">+ New listing</button></div>
+        <div id="editor" class="hidden"></div>
+        <div id="my-listings" class="stack"></div>
+      </div>
+      <div data-panel="offers" class="hidden"><div id="offers" class="stack"></div></div>
+      <div data-panel="deals" class="hidden"><div id="deals" class="stack"></div></div>
+      <div data-panel="profile" class="hidden"><div id="profile"></div></div>
+    </section>
+  </div>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

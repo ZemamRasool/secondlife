@@ -1,0 +1,295 @@
+// SecondLife database schema. Tables follow SPEC.md "Data model", plus:
+//   health_reports — the AI "project health report" for a verified repo
+//   reports        — "report this listing" (stolen code, scams)
+//   jobs           — background work queue
+//   audit_logs     — who accessed or changed what
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id              String    @id @default(cuid())
+  firebaseUid     String    @unique @map("firebase_uid")
+  email           String    @unique
+  displayName     String?   @map("display_name")
+  bio             String?
+  website         String?
+  // GitHub connection (read-only use: ownership proof + health report). Token encrypted at rest.
+  githubLogin     String?   @map("github_login")
+  githubTokenEnc  String?   @map("github_token_enc")
+  githubScope     String?   @map("github_scope")
+  // How the seller wants to be paid (e.g. "Payoneer: me@x.com"). Encrypted; only admins see it.
+  payoutInfoEnc   String?   @map("payout_info_enc")
+  termsVersion    String?   @map("terms_version")
+  termsAcceptedAt DateTime? @map("terms_accepted_at")
+  banned          Boolean   @default(false)
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  listings     Listing[]
+  offers       Offer[]
+  messages     Message[]
+  purchases    Transaction[] @relation("buyer")
+  sales        Transaction[] @relation("seller")
+  reports      Report[]
+
+  @@map("users")
+}
+
+enum ListingType {
+  codebase
+  domain
+  website
+}
+
+enum ListingStatus {
+  draft
+  pending_review
+  published
+  rejected
+  under_offer
+  sold
+  removed
+}
+
+model Listing {
+  id             String        @id @default(cuid())
+  sellerId       String        @map("seller_id")
+  type           ListingType
+  slug           String        @unique
+  title          String
+  summary        String
+  description    String
+  priceCents     Int           @map("price_cents")
+  currency       String        @default("USD") @db.Char(3)
+  techStack      String[]      @map("tech_stack")
+  whatsMissing   String?       @map("whats_missing")
+  traction       String?
+  monthlyVisitors Int?         @map("monthly_visitors")
+  status         ListingStatus @default(draft)
+  rejectReason   String?       @map("reject_reason")
+  verified       Boolean       @default(false)
+  // Listing created by an admin for a seller, with the seller's permission (cold start, SPEC.md).
+  createdByAdmin Boolean       @default(false) @map("created_by_admin")
+  // Full-text search column, kept up to date by Postgres itself (see migration).
+  searchVector   Unsupported("tsvector")? @map("search_vector")
+  publishedAt    DateTime?     @map("published_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  seller        User           @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  assets        ListingAsset[]
+  offers        Offer[]
+  healthReports HealthReport[]
+  reports       Report[]
+  transactions  Transaction[]
+
+  @@index([status, publishedAt])
+  @@index([sellerId])
+  @@map("listings")
+}
+
+enum AssetKind {
+  repo
+  domain
+  screenshot
+}
+
+model ListingAsset {
+  id          String    @id @default(cuid())
+  listingId   String    @map("listing_id")
+  kind        AssetKind
+  // repo: "owner/name" · domain: "example.com" · screenshot: stored file key
+  reference   String
+  // Domain proof: the value the seller puts in a DNS TXT record.
+  verifyToken String?   @map("verify_token")
+  verifiedAt  DateTime? @map("verified_at")
+  // Repo facts from GitHub (stars, languages, commits, last activity…)
+  metaJson    Json?     @map("meta_json")
+  position    Int       @default(0)
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  listing       Listing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  healthReports HealthReport[]
+
+  @@index([listingId])
+  @@map("listing_assets")
+}
+
+model HealthReport {
+  id         String   @id @default(cuid())
+  listingId  String   @map("listing_id")
+  assetId    String   @map("asset_id")
+  score      Int
+  summary    String
+  reportJson Json     @map("report_json")
+  usedAi     Boolean  @default(false) @map("used_ai")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  listing Listing      @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  asset   ListingAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, createdAt])
+  @@map("health_reports")
+}
+
+enum OfferStatus {
+  pending
+  accepted
+  declined
+  withdrawn
+  superseded
+}
+
+model Offer {
+  id          String      @id @default(cuid())
+  listingId   String      @map("listing_id")
+  buyerId     String      @map("buyer_id")
+  amountCents Int         @map("amount_cents")
+  status      OfferStatus @default(pending)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  listing     Listing      @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyer       User         @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  messages    Message[]
+  transaction Transaction?
+
+  @@index([listingId, status])
+  @@index([buyerId])
+  @@map("offers")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  offerId   String   @map("offer_id")
+  senderId  String   @map("sender_id")
+  body      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  offer  Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  sender User  @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([offerId, createdAt])
+  @@map("messages")
+}
+
+enum EscrowStatus {
+  awaiting_payment // buyer has to pay into escrow
+  funded // escrow holds the money; handover can start
+  release_approved // buyer confirmed (or 7 days passed): money can go to the seller
+  released // seller paid, deal done
+  disputed // buyer raised a problem; admin decides
+  refunded // money went back to the buyer
+  cancelled
+}
+
+model Transaction {
+  id              String       @id @default(cuid())
+  offerId         String       @unique @map("offer_id")
+  listingId       String       @map("listing_id")
+  buyerId         String       @map("buyer_id")
+  sellerId        String       @map("seller_id")
+  amountCents     Int          @map("amount_cents")
+  commissionCents Int          @map("commission_cents")
+  sellerPayoutCents Int        @map("seller_payout_cents")
+  currency        String       @db.Char(3)
+  escrowProvider  String       @map("escrow_provider")
+  escrowRef       String?      @map("escrow_ref")
+  escrowStatus    EscrowStatus @default(awaiting_payment) @map("escrow_status")
+  fundedAt        DateTime?    @map("funded_at")
+  handoverDoneAt  DateTime?    @map("handover_done_at")
+  releaseDueAt    DateTime?    @map("release_due_at")
+  confirmedAt     DateTime?    @map("confirmed_at")
+  releasedAt      DateTime?    @map("released_at")
+  disputeReason   String?      @map("dispute_reason")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  offer   Offer          @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  listing Listing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyer   User           @relation("buyer", fields: [buyerId], references: [id], onDelete: Restrict)
+  seller  User           @relation("seller", fields: [sellerId], references: [id], onDelete: Restrict)
+  tasks   HandoverTask[]
+
+  @@index([escrowStatus])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@map("transactions")
+}
+
+model HandoverTask {
+  id            String    @id @default(cuid())
+  transactionId String    @map("transaction_id")
+  task          String
+  position      Int
+  // Seller marks it done; buyer confirms they received it.
+  doneById      String?   @map("done_by")
+  doneAt        DateTime? @map("done_at")
+  confirmedAt   DateTime? @map("confirmed_at")
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([transactionId, position])
+  @@map("handover_tasks")
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  listingId  String   @map("listing_id")
+  reporterId String   @map("reporter_id")
+  reason     String
+  resolved   Boolean  @default(false)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  listing  Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  reporter User    @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([resolved, createdAt])
+  @@map("reports")
+}
+
+enum JobStatus {
+  queued
+  running
+  done
+  failed
+}
+
+model Job {
+  id          String    @id @default(cuid())
+  type        String
+  payload     Json
+  status      JobStatus @default(queued)
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3) @map("max_attempts")
+  runAt       DateTime  @default(now()) @map("run_at")
+  lockedAt    DateTime? @map("locked_at")
+  lastError   String?   @map("last_error")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([status, runAt])
+  @@map("jobs")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?  @map("actor_id")
+  actorEmail String?  @map("actor_email")
+  action     String
+  targetType String?  @map("target_type")
+  targetId   String?  @map("target_id")
+  ip         String?
+  meta       Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@map("audit_logs")
+}

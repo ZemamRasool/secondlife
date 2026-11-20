@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+uploads/*
+!uploads/.gitkeep
+coverage/
+*.log
+firebase-service-account*.json
+src/generated/

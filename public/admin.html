@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>SecondLife — Admin</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="wrap wide">
+    <header class="top">
+      <a class="logo" href="/app"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V11"/><path d="M12 11c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 14c0-3-2.5-5-6-5 0 3 2.5 5 6 5z"/></svg></span>SecondLife admin</a>
+      <div class="top-right"><span class="muted hide-sm" id="who"></span> <button class="btn btn-ghost hidden" id="logout">Log out</button></div>
+    </header>
+    <section class="card login hidden" id="login-view">
+      <h2>Admin log in</h2>
+      <p class="muted" id="login-hint">We'll email you a sign-in link.</p>
+      <form id="login-form" class="stack"><input type="email" name="email" required placeholder="you@email.com" aria-label="Email address"><button class="btn btn-primary" type="submit">Continue</button></form>
+      <button class="btn btn-ghost hidden full" id="google-btn">Continue with Google</button>
+      <div id="login-msg"></div>
+    </section>
+    <section class="hidden" id="app-view">
+      <div class="tiles" id="tiles"></div>
+      <div id="admin-msg"></div>
+      <div class="card"><h2>Waiting for review</h2><div id="review" class="stack"></div></div>
+      <div class="card"><div class="card-head"><h2>Deals</h2><select id="deal-filter" aria-label="Filter deals"><option value="">All</option><option value="awaiting_payment">Awaiting payment</option><option value="funded">Funded</option><option value="disputed">Disputed</option><option value="release_approved">Release approved</option><option value="released">Released</option></select></div>
+        <p class="muted small">Manual escrow: open each deal on Escrow.com as broker, then record here when the buyer's money is secured ("Funded") and when the seller has been paid ("Released").</p>
+        <div class="scroll-x"><table><thead><tr><th>Listing</th><th>Buyer → Seller</th><th class="right">Price</th><th class="right">Commission</th><th>Status</th><th>Handover</th><th></th></tr></thead><tbody id="deals"></tbody></table></div></div>
+      <div class="app-grid">
+        <div class="card"><h2>Reports</h2><div id="reports" class="stack"></div></div>
+        <div class="card"><h2>List a project for a seller</h2><p class="muted small">Cold start: only with the seller's permission. The listing goes live at once; the seller takes over by logging in with their email.</p><form id="coldstart" class="stack">
+          <input name="sellerEmail" type="email" required placeholder="Seller email">
+          <input name="sellerName" required placeholder="Seller name">
+          <input name="permissionNote" required placeholder="Permission: e.g. agreed on X DM, 6 Nov">
+          <select name="type"><option value="codebase">Codebase</option><option value="website">Website</option><option value="domain">Domain</option></select>
+          <input name="title" required placeholder="Title">
+          <input name="summary" required placeholder="One-line summary">
+          <textarea name="description" rows="4" required placeholder="Description (40+ characters)"></textarea>
+          <input name="techStack" placeholder="Tech, comma separated">
+          <input name="price" type="number" min="10" required placeholder="Price USD">
+          <button class="btn btn-primary" type="submit">Publish for seller</button>
+        </form></div>
+      </div>
+      <div class="card"><div class="card-head"><h2>Users</h2><input id="user-q" type="text" placeholder="Search email or name" aria-label="Search users"></div><div class="scroll-x"><table><thead><tr><th>Email</th><th>Name</th><th>GitHub</th><th class="right">Listings</th><th class="right">Sales</th><th class="right">Buys</th><th></th></tr></thead><tbody id="users"></tbody></table></div></div>
+      <div class="app-grid">
+        <div class="card"><h2>Failed background jobs</h2><div class="scroll-x"><table><thead><tr><th>Type</th><th>Error</th><th></th></tr></thead><tbody id="jobs"></tbody></table></div></div>
+        <div class="card"><h2>Audit log</h2><div class="scroll-x audit"><table><thead><tr><th>When</th><th>Who</th><th>Action</th></tr></thead><tbody id="audit"></tbody></table></div></div>
+      </div>
+    </section>
+  </div>
+  <script type="module" src="/js/admin.js"></script>
+</body>
+</html>

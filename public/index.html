@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SecondLife — buy and sell abandoned projects</title>
+  <meta name="description" content="Sell your abandoned project. Buy a head start. Verified codebases, domains and small websites, with escrow on every deal.">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="wrap wide">
+    <header class="top">
+      <a class="logo" href="/"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V11"/><path d="M12 11c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 14c0-3-2.5-5-6-5 0 3 2.5 5 6 5z"/></svg></span>SecondLife</a>
+      <div class="top-right"><a class="btn btn-ghost" href="/app#listings">Sell a project</a> <a class="btn btn-primary" href="/app">Log in</a></div>
+    </header>
+
+    <section class="search-hero">
+      <h1>One builder's graveyard is<br>another builder's <em>gold mine.</em></h1>
+      <p>Buy half-built apps, domains and small websites with real code and real history. Every seller proves ownership, and every deal goes through licensed escrow.</p>
+      <form class="searchbar" id="search">
+        <input type="text" name="q" placeholder="Search: invoice app, Flutter, SaaS boilerplate, .io domain…" aria-label="Search listings">
+        <button class="btn btn-primary" type="submit">Search</button>
+      </form>
+      <div class="filters">
+        <select name="type" id="f-type" aria-label="Type"><option value="">All types</option><option value="codebase">Codebases</option><option value="website">Websites</option><option value="domain">Domains</option></select>
+        <select id="f-tech" aria-label="Tech stack"><option value="">Any tech</option></select>
+        <input type="number" id="f-min" min="0" placeholder="Min $" aria-label="Minimum price">
+        <input type="number" id="f-max" min="0" placeholder="Max $" aria-label="Maximum price">
+        <select id="f-sort" aria-label="Sort"><option value="">Best match / newest</option><option value="price_asc">Price: low to high</option><option value="price_desc">Price: high to low</option><option value="newest">Newest</option></select>
+        <label class="check"><input type="checkbox" id="f-verified"><span>Verified only</span></label>
+      </div>
+    </section>
+
+    <div class="muted small" id="count"></div>
+    <div class="grid" id="results"></div>
+    <div class="pager" id="pager"></div>
+
+    <section class="steps">
+      <div class="card"><span class="num">1</span><h3>Proof, not promises</h3><p>Sellers connect GitHub or add a DNS record to prove they own what they sell. Look for the Verified badge.</p></div>
+      <div class="card"><span class="num">2</span><h3>A health report on every repo</h3><p>Tests, README, outdated packages, commit history and a plain-English summary, before you make an offer.</p></div>
+      <div class="card"><span class="num">3</span><h3>Escrow on every deal</h3><p>Your money is held by a licensed escrow company until the handover checklist is done and you confirm.</p></div>
+    </section>
+    <footer class="foot">© SecondLife · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></footer>
+  </div>
+  <script type="module" src="/js/browse.js"></script>
+</body>
+</html>

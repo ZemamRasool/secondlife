@@ -1,0 +1,41 @@
+# Starts PostgreSQL (and optionally the app) for local development.
+#   docker compose up -d db     -> database only (run the app with `npm run dev`)
+#   docker compose up --build   -> database + app
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: secondlife
+      POSTGRES_PASSWORD: secondlife
+      POSTGRES_DB: secondlife
+    ports:
+      # Only reachable from this computer, not from your network
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U secondlife"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://secondlife:secondlife@db:5432/secondlife?schema=public
+      # Local Docker runs are for development; production sets this to production
+      NODE_ENV: development
+      # This container also runs the background worker (reads receipts, runs rules)
+      WORKER_INLINE: "true"
+    ports:
+      - "3000:3000"
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  uploads:
